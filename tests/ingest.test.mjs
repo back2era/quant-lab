@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {validateSnapshot} from '../lib/ingest.mjs';
+const seed=JSON.parse(readFileSync(new URL('../lib/seed.json',import.meta.url)));
+const now='2026-09-09T01:00:00Z';
+test('future collection timestamp is rejected',()=>{assert.throws(()=>validateSnapshot({...seed,asOf:'2027-01-01T00:00:00Z'},now),/时间/)});
+test('nonfinite FX cannot reach accounting',()=>{const d=structuredClone(seed);d.fx.USD=Infinity;assert.throws(()=>validateSnapshot(d,now),/汇率/)});
+test('asset identities and lots cannot be overridden',()=>{const d=structuredClone(seed);d.assets[0].lot=0;assert.throws(()=>validateSnapshot(d,now),/标的/)});
+test('future bars are rejected',()=>{const d=structuredClone(seed);d.assets[0].bars[0].closeAt='2027-01-01T00:00:00Z';assert.throws(()=>validateSnapshot(d,now),/日线/)});
+test('invalid dividend is rejected before persistence',()=>{const d=structuredClone(seed);d.assets[0].actions.push({type:'dividend',at:'2026-09-01T00:00:00Z',amount:-1});assert.throws(()=>validateSnapshot(d,now),/公司行动/)});
+test('verified source snapshot passes validation',()=>{assert.equal(validateSnapshot(seed,now).assets.length,12)});
