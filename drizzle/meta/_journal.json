@@ -8,6 +8,13 @@
       "when": 1788788047195,
       "tag": "0000_silly_clint_barton",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788923990034,
+      "tag": "0001_warm_iron_lad",
+      "breakpoints": true
     }
   ]
 }

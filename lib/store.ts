@@ -8,3 +8,5 @@ export async function readAccount(){
  if(!row)throw new Error('账户初始化失败');return {revision:row.revision,state:JSON.parse(row.body)};
 }
 export async function saveAccount(state:unknown,revision:number){const result=await db().prepare('UPDATE account SET body = ?, revision = revision + 1 WHERE id = ? AND revision = ?').bind(JSON.stringify(state),'main',revision).run();if(result.meta.changes!==1)throw new Error('另一次更新已完成，请刷新后重试。');}
+export async function readQuotes(){const row=await db().prepare('SELECT body FROM quotes WHERE id = ?').bind('live').first<{body:string}>();return row?JSON.parse(row.body):null;}
+export async function saveQuotes(value:unknown){await db().prepare('INSERT INTO quotes (id,body) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body').bind('live',JSON.stringify(value)).run();}

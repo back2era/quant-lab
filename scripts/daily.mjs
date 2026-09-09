@@ -7,7 +7,7 @@ const base=new URL(origin);if(base.protocol!=='https:'&&!['localhost','127.0.0.1
 const headers={'OAI-Sites-Authorization':'Bearer '+token,'Content-Type':'application/json',Origin:base.origin};
 async function api(body){const r=await fetch(new URL('/api/account',base),{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(60000)});let j;try{j=await r.json();}catch{throw Error('站点未返回账户数据，请检查登录或连接');}if(!r.ok)throw Error(j.error||'账户更新失败 HTTP '+r.status);return j;}
 const before=await api();
-const snapshot=await collectData(before.state.data);
+const snapshot=await collectData(before.state.data,new Date().toISOString(),[...before.state.positions.map(p=>p.symbol),...before.state.orders.filter(o=>o.status==='PENDING').map(o=>o.symbol),...(before.state.watchlist||[])]);
 const data=validateSnapshot(snapshot,new Date().toISOString());
 const result=await api({action:'ingest',data});
 const saved=await api();if(saved.revision<result.revision)throw Error('账户持久化核对失败');
