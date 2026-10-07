@@ -1,4 +1,6 @@
 import {readAccount,readQuotes,saveQuotes} from '../../../lib/store';
+import {env} from 'cloudflare:workers';
+import {canManage} from '../../../lib/access.mjs';
 import {collectQuotes} from '../../../lib/live.mjs';
 import {selectQuotes} from '../../../lib/quote-state.mjs';
 export const dynamic='force-dynamic';
@@ -6,8 +8,9 @@ let cache:any=null,until=0,pending:Promise<any>|null=null;
 const reply=(x:unknown,status=200)=>Response.json(x,{status,headers:{'Cache-Control':'no-store'}});
 const desktopFresh=(s:any)=>s?.transport==='桌面行情采集'&&Date.now()-Date.parse(s.asOf)>=0&&Date.now()-Date.parse(s.asOf)<120000;
 function view(state:any,s:any){return {...s,quotes:selectQuotes(state.data?.assets||[],[s?.quotes||[]])};}
-export async function GET(){try{
+export async function GET(request:Request){try{
  const [{state},stored]=await Promise.all([readAccount(),readQuotes()]);
+ if(!await canManage(request,env))return reply(view(state,stored||{asOf:null,quotes:[],errors:['尚无已保存的行情快照，展示可用的原始收盘记录。'],transport:'已保存行情'}));
  if(desktopFresh(stored))return reply(view(state,stored));
  if(cache&&Date.now()<until&&Date.parse(cache.asOf)>=Date.parse(stored?.asOf||0))return reply(view(state,cache));
  if(stored?.transport==='网站公共来源'&&Date.now()-Date.parse(stored.asOf)<45000)return reply(view(state,stored));
@@ -22,6 +25,7 @@ export async function GET(){try{
  return reply(await pending);
  }catch{return reply({error:'最新行情暂不可用'},503);}}
 export async function POST(request:Request){
+ if(!await canManage(request,env))return reply({error:'公开行情为只读，写入需要所有者或采集程序授权。'},403);
  if(request.headers.get('origin')!==new URL(request.url).origin)return reply({error:'来源无效'},403);
  try{
   const text=await request.text();if(text.length>200000)return reply({error:'报价过大'},413);

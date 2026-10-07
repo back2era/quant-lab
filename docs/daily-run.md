@@ -2,6 +2,7 @@
 
 1. 通过 Sites 的 get_site 读取 `.openai/hosting.json` 的 project_id。沿用返回的 current_live_url 和已有 siwc_bypass_bearer_token，不生成或旋转令牌。
 2. 只在本次进程环境设置 QUANT_SITE_URL 与 QUANT_SITE_TOKEN，不打印、不落盘、不提交凭据。
+   2026-10-07 起，网站公开只读。脚本同时把该已有令牌放入 `X-Quant-Write-Token`，服务端校验已配置的 SHA-256 摘要；不要去除该写入授权头。所有者可通过网页 ChatGPT 登录管理。访客只读请求不触发行情采集。
 3. 在此项目运行 `node scripts/daily.mjs`。它读取已存账户，采集真实行情与财报，校验输入，然后通过私有站点写入D1账本，再读回验证。
 4. 如果连接令牌不可用，使用已登录网页的“执行每日研究”，遇到来源限制则报告失败，不伪造采集结果。
 5. 依据脚本输出总结资金、盈亏、新成交、计划及来源错误。每天香港时间08:30，由本任务的heartbeat触发；电脑与Codex需可用。
